@@ -1,6 +1,7 @@
 //==2023/06/13 画面をスクロールさせる==//
 //==2023/06/18 自機を動かす ==//
 //==2023/06/18 単数の弾を発射する ==//
+//==2023/06/18 複数の弾を発射する ==//
 
 /*起動時の処理*/
 function setup() {
@@ -9,6 +10,7 @@ function setup() {
     loadImg(1, "image/spaceship.png");
     loadImg(2, "image/missile.png");
     initSShip();
+    initMissile();
 }
 /*メインループ*/
 function mainloop() {
@@ -37,29 +39,45 @@ function moveShip() {
     if(key[39] > 0 && ssX < 1009)   ssX += 20; //右
     if(key[38] > 0 && ssY > 40)     ssY -= 20; //上
     if(key[40] > 0 && ssY < 680)    ssY += 20; //下
-    if(key[32] == 1) setMissile(ssX+40, ssY, 40, 0); //弾発射
+    if(key[32] == 1){
+        key[32]++; //連打で次の弾を撃つための記述
+        setMissile(ssX+40, ssY, 40, 0); //弾発射
+    }
     drawImgC(1,ssX,ssY);//自機の描画
 }
 /*弾の管理*/
-var mslX, mslY, mslXp, mslYp;
-var mslF = false; //弾が撃ち出された状態かを管理するフラグ
+var MSL_MAX = 100;//最大いくつの弾を撃てるか
+var mslX = new Array(MSL_MAX);
+var mslY = new Array(MSL_MAX);
+var mslXp= new Array(MSL_MAX);
+var mslYp= new Array(MSL_MAX);
+var mslF = new Array(MSL_MAX);//弾が撃ち出された状態かを管理するフラグ
+var mslNum = 0;//弾のデータを配列に代入する
+/*弾を管理する配列を初期化する関数*/
+function initMissile() {
+    for(var i=0; i<MSL_MAX;　i++) mslF[i] = false;
+    mslNum = 0;
+}
 /*弾を撃ち出す関数*/
 function setMissile(x,y,xp,yp) {
-    if (mslF == false) {//撃ち出された状態なら
+    if (mslF[mslNum] == false) {//撃ち出された状態なら
         //弾の座標と移動量を代入
-        mslX = x;
-        mslY = y;
-        mslXp = xp;
-        mslYp = yp;
-        mslF = true;
+        mslX[mslNum] = x;
+        mslY[mslNum] = y;
+        mslXp[mslNum] = xp;
+        mslYp[mslNum] = yp;
+        mslF[mslNum] = true;
+        mslNum = (mslNum+1)%MSL_MAX;
     }
 }
 /*弾を動かす関数*/
 function moveMissile() {
-    if(mslF == true){
-        mslX = mslX + mslXp;
-        mslY = mslY + mslYp;
-        drawImgC(2, mslX, mslY);
-        if(mslX > 1200) mslF = false;
+    for(var i=0; i<MSL_MAX; i++){
+        if(mslF[i] == true){
+            mslX[i] = mslX[i] + mslXp[i];
+            mslY[i] = mslY[i] + mslYp[i];
+            drawImgC(2, mslX[i], mslY[i]);
+            if(mslX[i] > 1200) mslF[i] = false;
+        }
     }
 }
