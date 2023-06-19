@@ -3,15 +3,17 @@
 //==2023/06/18 単数の弾を発射する ==//
 //==2023/06/18 複数の弾を発射する ==//
 //==2023/06/19 弾の自動発射       ==//
-
+//==2023/06/19 敵機を動かす ==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
     loadImg(0, "image/bg.png"); //画像の読み込み
     loadImg(1, "image/spaceship.png");
     loadImg(2, "image/missile.png");
+    loadImg(5, "image/enemy1.png");
     initSShip();
     initMissile();
+    initObject();
 }
 /*メインループ*/
 var tmr = 0; //ゲーム内タイマー
@@ -20,6 +22,8 @@ function mainloop() {
     drawBG(1);
     moveShip();
     moveMissile();
+    if(tmr%10 == 0) setObject(1200, rnd(700), -12, 0);
+    moveObject();
 }
 /*背景のスクロール*/
 var bgX = 0; //背景スクロール位置を管理する変数
@@ -93,4 +97,37 @@ function moveMissile() {
             if(mslX[i] > 1200) mslF[i] = false;
         }
     }
+}
+/*敵機の管理*/
+var OBJ_MAX = 100;
+var objX  = new Array(OBJ_MAX);
+var objY  = new Array(OBJ_MAX);
+var objXp = new Array(OBJ_MAX);
+var objYp = new Array(OBJ_MAX);
+var objF  = new Array(OBJ_MAX);
+var objNum = 0;
+/*敵機を管理する配列を初期化する関数*/
+function initObject() {
+    for(var i=0; i<OBJ_MAX;　i++) objF[i] = false;
+    objNum = 0;
+}
+/*敵機をセットする関数*/
+function setObject(x,y,xp,yp) {
+    objX[objNum] = x;
+    objY[objNum] = y;
+    objXp[objNum] = xp;
+    objYp[objNum] = yp;
+    objF[objNum] = true;
+    objNum = (objNum+1)%OBJ_MAX;
+}
+/*敵機を動かす関数*/
+function moveObject() {
+    for(var i=0; i<OBJ_MAX; i++){
+        if(objF[i] == true){
+            objX[i] = objX[i] + objXp[i];
+            objY[i] = objY[i] + objYp[i];
+            drawImgC(5, objX[i], objY[i]);
+            if(objX[i] < 0) objF[i] = false;
+        }
+    }   
 }
