@@ -2,6 +2,7 @@
 //==2023/06/18 自機を動かす ==//
 //==2023/06/18 単数の弾を発射する ==//
 //==2023/06/18 複数の弾を発射する ==//
+//==2023/06/19 弾の自動発射       ==//
 
 /*起動時の処理*/
 function setup() {
@@ -13,7 +14,9 @@ function setup() {
     initMissile();
 }
 /*メインループ*/
+var tmr = 0; //ゲーム内タイマー
 function mainloop() {
+    tmr++;
     drawBG(1);
     moveShip();
     moveMissile();
@@ -28,6 +31,7 @@ function drawBG(spd) {//背景をスクロール位置を管理する
 /*自機の管理*/
 var ssX = 0;
 var ssY = 0;
+var automa = 0;//弾の自動発射のON,OFF
 /*自機の座標に代入する関数*/
 function initSShip() {
     ssX = 400;
@@ -39,10 +43,19 @@ function moveShip() {
     if(key[39] > 0 && ssX < 1009)   ssX += 20; //右
     if(key[38] > 0 && ssY > 40)     ssY -= 20; //上
     if(key[40] > 0 && ssY < 680)    ssY += 20; //下
-    if(key[32] == 1){
+    if(key[65] == 1){//Aキーを打った
+        key[65]++;
+        automa = 1-automa;//値を1に変更
+    }
+    if(automa == 0 && key[32] == 1){//自動発射OFF
         key[32]++; //連打で次の弾を撃つための記述
         setMissile(ssX+40, ssY, 40, 0); //弾発射
     }
+    if(automa == 1 && tmr%8 == 0) setMissile(ssX+40, ssY, 40, 0); //弾自動発射
+    var col = "black";
+    if(automa == 1) col = "white";
+    fRect(900, 20,  280, 60, "blue");
+    fText("[A]uto Missile", 1040, 50,36, col);
     drawImgC(1,ssX,ssY);//自機の描画
 }
 /*弾の管理*/
