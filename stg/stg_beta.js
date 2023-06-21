@@ -5,6 +5,7 @@
 //==2023/06/19 弾の自動発射       ==//
 //==2023/06/19 敵機を動かす ==//
 //==2023/06/21 敵機が弾を打つようにする ==//
+//==2023/06/21 敵機を撃ち落とせるようにする ==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
@@ -135,6 +136,17 @@ function moveObject() {
             drawImgC(objImg[i], objX[i], objY[i]);
             if(objType[i] == 1 && rnd(100) < 3) setObject(0, 4, objX[i], objY[i], -24, 0);
             if(objX[i] < 0) objF[i] = false;
+            /*自機が撃った弾とヒットチェック*/
+            if(objType[i] == 1){//物体が敵機なら
+                var r = 12 + (img[objImg[i]].width + img[objImg[i]].height) / 4;//ヒットチェックの径(距離)をrに代入
+                for(var n=0; n<MSL_MAX; n++){//for文で発射中のすべての弾を調べる。
+                    if(mslF[n] == true){
+                        if(getDis(objX[i], objY[i], mslX[n], mslY[n]) < r){
+                            objF[i] = false;
+                        }
+                    }
+                }       
+            }
         }
     }   
 }
