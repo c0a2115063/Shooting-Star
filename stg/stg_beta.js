@@ -6,6 +6,7 @@
 //==2023/06/19 敵機を動かす ==//
 //==2023/06/21 敵機が弾を打つようにする ==//
 //==2023/06/21 敵機を撃ち落とせるようにする ==//
+//==2023/06/21 自機のエネルギーを組み込む ==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
@@ -27,6 +28,9 @@ function mainloop() {
     moveMissile();
     if(tmr%10 == 0) setObject(1, 5,1200, rnd(700), -12, 0);
     moveObject();
+    /*エネルギー描画*/
+    for(i=0; i<10; i++) fRect(20+i*30, 660, 20, 40, "#c00000"); //残機0のエネルギー
+    for(i=0; i<energy; i++) fRect(20+i*30, 660, 20, 40, colorRGB(160-16*i, 240-12*i, 24*i));//エネルギーの残量を描く
 }
 /*背景のスクロール*/
 var bgX = 0; //背景スクロール位置を管理する変数
@@ -39,10 +43,13 @@ function drawBG(spd) {//背景をスクロール位置を管理する
 var ssX = 0;
 var ssY = 0;
 var automa = 0;//弾の自動発射のON,OFF
+var energy = 0;
+var muteki = 0;//無敵状態になっている時間
 /*自機の座標に代入する関数*/
 function initSShip() {
     ssX = 400;
     ssY = 360;
+    energy = 10;
 }
 /*キー操作で自機を動かす関数*/
 function moveShip() {
@@ -60,10 +67,13 @@ function moveShip() {
     }
     if(automa == 1 && tmr%8 == 0) setMissile(ssX+40, ssY, 40, 0); //弾自動発射
     var col = "black";
+    /*弾自動発射システム描画*/
     if(automa == 1) col = "white";
     fRect(900, 20,  280, 60, "blue");
     fText("[A]uto Missile", 1040, 50,36, col);
-    drawImgC(1,ssX,ssY);//自機の描画
+    /*無敵状態*/
+    if(muteki % 2 == 0) drawImgC(1,ssX,ssY);//自機の描画
+    if(muteki > 0) muteki--;
 }
 /*弾の管理*/
 var MSL_MAX = 100;//最大いくつの弾を撃てるか
@@ -136,9 +146,10 @@ function moveObject() {
             drawImgC(objImg[i], objX[i], objY[i]);
             if(objType[i] == 1 && rnd(100) < 3) setObject(0, 4, objX[i], objY[i], -24, 0);
             if(objX[i] < 0) objF[i] = false;
+
             /*自機が撃った弾とヒットチェック*/
             if(objType[i] == 1){//物体が敵機なら
-                var r = 12 + (img[objImg[i]].width + img[objImg[i]].height) / 4;//ヒットチェックの径(距離)をrに代入
+                var r = 12 + (img[objImg[i]].width + img[objImg[i]].height) / 4;//ヒットチェックの径(距離)をrに代入 ※img[n]:n番に読み込んだ画像
                 for(var n=0; n<MSL_MAX; n++){//for文で発射中のすべての弾を調べる。
                     if(mslF[n] == true){
                         if(getDis(objX[i], objY[i], mslX[n], mslY[n]) < r){
@@ -146,6 +157,15 @@ function moveObject() {
                         }
                     }
                 }       
+            }
+            /*自機と敵機のヒットチェック*/
+            var r = 30 + (img[objImg[i]].width+img[objImg[i]].height)/4;
+            if(getDis(objX[i], objY[i], ssX, ssY) < r){
+                if(objType[i] <= 1 && muteki == 0){//敵機と弾
+                    objF[i] = false;
+                    energy--;
+                    muteki = 30;
+                }
             }
         }
     }   
