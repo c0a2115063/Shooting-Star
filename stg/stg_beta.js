@@ -7,17 +7,20 @@
 //==2023/06/21 敵機が弾を打つようにする ==//
 //==2023/06/21 敵機を撃ち落とせるようにする ==//
 //==2023/06/21 自機のエネルギーを組み込む ==//
+//==2023/06/21 エフェクト(爆発演出)を組み込む==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
     loadImg(0, "image/bg.png"); //画像の読み込み
     loadImg(1, "image/spaceship.png");
     loadImg(2, "image/missile.png");
+    loadImg(3, "image/explode.png");
     loadImg(4, "image/enemy0.png");
     loadImg(5, "image/enemy1.png");
     initSShip();
     initMissile();
     initObject();
+    initEffect();
 }
 /*メインループ*/
 var tmr = 0; //ゲーム内タイマー
@@ -28,6 +31,7 @@ function mainloop() {
     moveMissile();
     if(tmr%10 == 0) setObject(1, 5,1200, rnd(700), -12, 0);
     moveObject();
+    drawEffect();
     /*エネルギー描画*/
     for(i=0; i<10; i++) fRect(20+i*30, 660, 20, 40, "#c00000"); //残機0のエネルギー
     for(i=0; i<energy; i++) fRect(20+i*30, 660, 20, 40, colorRGB(160-16*i, 240-12*i, 24*i));//エネルギーの残量を描く
@@ -153,6 +157,7 @@ function moveObject() {
                 for(var n=0; n<MSL_MAX; n++){//for文で発射中のすべての弾を調べる。
                     if(mslF[n] == true){
                         if(getDis(objX[i], objY[i], mslX[n], mslY[n]) < r){
+                            setEffect(objX[i], objY[i], 9);
                             objF[i] = false;
                         }
                     }
@@ -169,4 +174,31 @@ function moveObject() {
             }
         }
     }   
+}
+/*エフェクト(爆発演出)の管理*/
+var EFCT_MAX = 100;
+var efctX = new Array(EFCT_MAX);
+var efctY = new Array(EFCT_MAX);
+var efctN = new Array(EFCT_MAX);
+var efctNum = new Array(EFCT_MAX);
+/*エフェクトを管理する配列を初期化する関数*/
+function initEffect() {
+    for(var i=0; i<EFCT_MAX; i++) efctN[i] = 0;
+    efctNum = 0;
+}
+/*エフェクトをセットする関数*/
+function setEffect(x,y,n) {
+    efctX[efctNum] = x;
+    efctY[efctNum] = y;
+    efctN[efctNum] = n;
+    efctNum = (efctNum+1) % EFCT_MAX;
+}
+/*エフェクトを表示する関数*/
+function drawEffect() {
+    for(var i=0; i<EFCT_MAX; i++){
+        if(efctN[i] > 0){
+            drawImgTS(3, (9-efctN[i])*128, 0, 128, 128, efctX[i]-64, efctY[i]-64, 128, 128);
+            efctN[i]--;
+        }
+    }
 }
