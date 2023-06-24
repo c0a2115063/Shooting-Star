@@ -8,6 +8,7 @@
 //==2023/06/21 敵機を撃ち落とせるようにする ==//
 //==2023/06/21 自機のエネルギーを組み込む ==//
 //==2023/06/21 エフェクト(爆発演出)を組み込む==//
+//==2023/06/24 色々な敵機を登場させる==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
@@ -15,12 +16,12 @@ function setup() {
     loadImg(1, "image/spaceship.png");
     loadImg(2, "image/missile.png");
     loadImg(3, "image/explode.png");
-    loadImg(4, "image/enemy0.png");
-    loadImg(5, "image/enemy1.png");
+    for(var i=0; i<=4; i++) loadImg(4+i, "image/enemy"+i+".png");
     initSShip();
     initMissile();
     initObject();
     initEffect();
+    //setEnemy();
 }
 /*メインループ*/
 var tmr = 0; //ゲーム内タイマー
@@ -29,12 +30,13 @@ function mainloop() {
     drawBG(1);
     moveShip();
     moveMissile();
-    if(tmr%10 == 0) setObject(1, 5,1200, rnd(700), -12, 0);
+    //if(tmr%10 == 0) setObject(1,5,1200, rnd(700), -12, 0, 1);
     moveObject();
     drawEffect();
     /*エネルギー描画*/
     for(i=0; i<10; i++) fRect(20+i*30, 660, 20, 40, "#c00000"); //残機0のエネルギー
     for(i=0; i<energy; i++) fRect(20+i*30, 660, 20, 40, colorRGB(160-16*i, 240-12*i, 24*i));//エネルギーの残量を描く
+    setEnemy();
 }
 /*背景のスクロール*/
 var bgX = 0; //背景スクロール位置を管理する変数
@@ -124,6 +126,7 @@ var objY  = new Array(OBJ_MAX);
 var objXp = new Array(OBJ_MAX);
 var objYp = new Array(OBJ_MAX);
 var objF  = new Array(OBJ_MAX);
+var objLife = new Array(OBJ_MAX);
 var objNum = 0;
 /*敵機を管理する配列を初期化する関数*/
 function initObject() {
@@ -131,7 +134,7 @@ function initObject() {
     objNum = 0;
 }
 /*敵機をセットする関数*/
-function setObject(typ, png, x,y,xp,yp) {
+function setObject(typ,png,x,y,xp,yp,lif) {
     objType[objNum] = typ;
     objImg[objNum] = png;
     objX[objNum] = x;
@@ -139,6 +142,7 @@ function setObject(typ, png, x,y,xp,yp) {
     objXp[objNum] = xp;
     objYp[objNum] = yp;
     objF[objNum] = true;
+    objLife[objNum] = lif;
     objNum = (objNum+1)%OBJ_MAX;
 }
 /*敵機を動かす関数*/
@@ -147,18 +151,38 @@ function moveObject() {
         if(objF[i] == true){
             objX[i] = objX[i] + objXp[i];
             objY[i] = objY[i] + objYp[i];
+            /*敵2の特殊な動き*/
+            if(objImg[i] == 6){
+                if(objY[i] < 60) objYp[i] = 8;
+                if(objY[i] > 660) objYp[i] = -8;
+            }
+            /*敵3の特殊な動き*/
+            if(objImg[i] == 7){
+                if(objXp[i] < 0){
+                    objXp[i] = int(objXp[i]*0.95);
+                    if(objXp[i] == 0){
+                        setObject(0, 4, objX[i], objY[i], -20, 0, 0);
+                        objXp[i] = 20;
+                    }
+                }
+            }
             drawImgC(objImg[i], objX[i], objY[i]);
-            if(objType[i] == 1 && rnd(100) < 3) setObject(0, 4, objX[i], objY[i], -24, 0);
-            if(objX[i] < 0) objF[i] = false;
-
+            
             /*自機が撃った弾とヒットチェック*/
             if(objType[i] == 1){//物体が敵機なら
                 var r = 12 + (img[objImg[i]].width + img[objImg[i]].height) / 4;//ヒットチェックの径(距離)をrに代入 ※img[n]:n番に読み込んだ画像
                 for(var n=0; n<MSL_MAX; n++){//for文で発射中のすべての弾を調べる。
                     if(mslF[n] == true){
                         if(getDis(objX[i], objY[i], mslX[n], mslY[n]) < r){
-                            setEffect(objX[i], objY[i], 9);
-                            objF[i] = false;
+                            mslF[n] = false;//敵機に当たったら消える
+                            objLife[i]--;
+                            if(objLife[i] == 0){
+                                objF[i] = false;
+                                setEffect(objX[i], objY[i], 9);
+                            }
+                            else{
+                                setEffect(objX[i], objY[i], 3);
+                            }
                         }
                     }
                 }       
@@ -172,6 +196,7 @@ function moveObject() {
                     muteki = 30;
                 }
             }
+            if(objX[i]<-100 || objX[i]>1300 || objY[i]<-100 || objY[i]>820) objF[i] = false;
         }
     }   
 }
@@ -201,4 +226,11 @@ function drawEffect() {
             efctN[i]--;
         }
     }
+}
+/*4種類の敵を出現させる関数*/
+function setEnemy() {
+    if(tmr%60 == 0) setObject(1, 5, 1300, 60+rnd(600), -16, 0, 1);//敵機1
+    if(tmr%60 ==10) setObject(1, 6, 1300, 60+rnd(600), -12, 8, 3);//敵機2
+    if(tmr%60 ==20) setObject(1, 7, 1300, 360+rnd(300), -48, -10, 5);//敵機3
+    if(tmr%60 ==30) setObject(1, 8, 1300, rnd(720-192), -6, 0, 0);//障害物
 }
