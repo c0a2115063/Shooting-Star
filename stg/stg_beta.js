@@ -9,7 +9,10 @@
 //==2023/06/21 自機のエネルギーを組み込む ==//
 //==2023/06/21 エフェクト(爆発演出)を組み込む==//
 //==2023/06/24 色々な敵機を登場させる==//
+//==2023/06/24 パワーアップアイテムを組み込む==//
 /*起動時の処理*/
+
+
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
     loadImg(0, "image/bg.png"); //画像の読み込み
@@ -17,11 +20,12 @@ function setup() {
     loadImg(2, "image/missile.png");
     loadImg(3, "image/explode.png");
     for(var i=0; i<=4; i++) loadImg(4+i, "image/enemy"+i+".png");
+    for(var i=0; i<=2; i++) loadImg(9+i, "image/item"+i+".png");
+    loadImg(12, "image/laser.png");
     initSShip();
     initMissile();
     initObject();
     initEffect();
-    //setEnemy();
 }
 /*メインループ*/
 var tmr = 0; //ゲーム内タイマー
@@ -30,13 +34,13 @@ function mainloop() {
     drawBG(1);
     moveShip();
     moveMissile();
-    //if(tmr%10 == 0) setObject(1,5,1200, rnd(700), -12, 0, 1);
     moveObject();
     drawEffect();
     /*エネルギー描画*/
     for(i=0; i<10; i++) fRect(20+i*30, 660, 20, 40, "#c00000"); //残機0のエネルギー
     for(i=0; i<energy; i++) fRect(20+i*30, 660, 20, 40, colorRGB(160-16*i, 240-12*i, 24*i));//エネルギーの残量を描く
     setEnemy();
+    setItem();
 }
 /*背景のスクロール*/
 var bgX = 0; //背景スクロール位置を管理する変数
@@ -51,6 +55,8 @@ var ssY = 0;
 var automa = 0;//弾の自動発射のON,OFF
 var energy = 0;
 var muteki = 0;//無敵状態になっている時間
+var laser = 0;
+var weapon = 0;//最大幾つ何個発射できるのか
 /*自機の座標に代入する関数*/
 function initSShip() {
     ssX = 400;
@@ -69,9 +75,9 @@ function moveShip() {
     }
     if(automa == 0 && key[32] == 1){//自動発射OFF
         key[32]++; //連打で次の弾を撃つための記述
-        setMissile(ssX+40, ssY, 40, 0); //弾発射
+        setWeapon();
     }
-    if(automa == 1 && tmr%8 == 0) setMissile(ssX+40, ssY, 40, 0); //弾自動発射
+    if(automa == 1 && tmr%8 == 0) setWeapon(); //弾自動発射
     var col = "black";
     /*弾自動発射システム描画*/
     if(automa == 1) col = "white";
@@ -88,23 +94,28 @@ var mslY = new Array(MSL_MAX);
 var mslXp= new Array(MSL_MAX);
 var mslYp= new Array(MSL_MAX);
 var mslF = new Array(MSL_MAX);//弾が撃ち出された状態かを管理するフラグ
+var mslImg = new Array(MSL_MAX);//通常弾またはレーザーの画像番号を配列に代入
 var mslNum = 0;//弾のデータを配列に代入する
 /*弾を管理する配列を初期化する関数*/
 function initMissile() {
-    for(var i=0; i<MSL_MAX;　i++) mslF[i] = false;
+    for(var i=0; i<MSL_MAX; i++) mslF[i] = false;
     mslNum = 0;
 }
 /*弾を撃ち出す関数*/
 function setMissile(x,y,xp,yp) {
-    if (mslF[mslNum] == false) {//撃ち出された状態なら
-        //弾の座標と移動量を代入
-        mslX[mslNum] = x;
-        mslY[mslNum] = y;
-        mslXp[mslNum] = xp;
-        mslYp[mslNum] = yp;
-        mslF[mslNum] = true;
-        mslNum = (mslNum+1)%MSL_MAX;
+    //弾の座標と移動量を代入
+    mslX[mslNum] = x;
+    mslY[mslNum] = y;
+    mslXp[mslNum] = xp;
+    mslYp[mslNum] = yp;
+    mslF[mslNum] = true;
+    mslImg[mslNum] = 2;
+    /*レーザーシステム*/
+    if(laser > 0){//レーザーアイテム取得⇒100発撃てる
+        laser--;//-1
+        mslImg[mslNum] = 12;
     }
+    mslNum = (mslNum+1)%MSL_MAX;
 }
 /*弾を動かす関数*/
 function moveMissile() {
@@ -112,7 +123,7 @@ function moveMissile() {
         if(mslF[i] == true){
             mslX[i] = mslX[i] + mslXp[i];
             mslY[i] = mslY[i] + mslYp[i];
-            drawImgC(2, mslX[i], mslY[i]);
+            drawImgC(mslImg[i], mslX[i], mslY[i]);
             if(mslX[i] > 1200) mslF[i] = false;
         }
     }
@@ -174,7 +185,7 @@ function moveObject() {
                 for(var n=0; n<MSL_MAX; n++){//for文で発射中のすべての弾を調べる。
                     if(mslF[n] == true){
                         if(getDis(objX[i], objY[i], mslX[n], mslY[n]) < r){
-                            mslF[n] = false;//敵機に当たったら消える
+                            if(mslImg[n] == 2) mslF[n] = false;//通常弾だったら敵機に当たったら消える
                             objLife[i]--;
                             if(objLife[i] == 0){
                                 objF[i] = false;
@@ -194,6 +205,13 @@ function moveObject() {
                     objF[i] = false;
                     energy--;
                     muteki = 30;
+                }
+                /*アイテムシステム*/
+                if(objType[i] == 2){//アイテム
+                    objF[i] = false;//アイテム消える
+                    if(objImg[i] == 9 && energy < 10) energy++;//エネルギー回復
+                    if(objImg[i] == 10) weapon++; //弾の数増える
+                    if(objImg[i] == 11) laser = laser + 100;//レーザー砲取得
                 }
             }
             if(objX[i]<-100 || objX[i]>1300 || objY[i]<-100 || objY[i]>820) objF[i] = false;
@@ -233,4 +251,16 @@ function setEnemy() {
     if(tmr%60 ==10) setObject(1, 6, 1300, 60+rnd(600), -12, 8, 3);//敵機2
     if(tmr%60 ==20) setObject(1, 7, 1300, 360+rnd(300), -48, -10, 5);//敵機3
     if(tmr%60 ==30) setObject(1, 8, 1300, rnd(720-192), -6, 0, 0);//障害物
+}
+/*複数の弾を一度に放つ関数*/
+function setWeapon() {
+    var n = weapon; //同時に幾つ発射するのか
+    if(n > 8) n = 8;//最大9個
+    for(var i=0; i<=n; i++) setMissile(ssX+40, ssY-n*6+i*12, 40, int((i-n/2)*2));
+}
+/*アイテムを出現させる関数*/
+function setItem() {
+    if(tmr % 90 == 0) setObject(2, 9, 1300, 60+rnd(600), -10, 0, 0); //Energy
+    if(tmr % 90 ==30) setObject(2, 10, 1300, 60+rnd(600), -10, 0, 0);//Missile
+    if(tmr % 90 ==60) setObject(2, 11, 1300, 60+rnd(600), -10, 0, 0);//Laser
 }
