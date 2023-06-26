@@ -10,9 +10,8 @@
 //==2023/06/21 エフェクト(爆発演出)を組み込む==//
 //==2023/06/24 色々な敵機を登場させる==//
 //==2023/06/24 パワーアップアイテムを組み込む==//
+//==2023/06/26 スマートフォン
 /*起動時の処理*/
-
-
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
     loadImg(0, "image/bg.png"); //画像の読み込み
@@ -83,6 +82,17 @@ function moveShip() {
     if(automa == 1) col = "white";
     fRect(900, 20,  280, 60, "blue");
     fText("[A]uto Missile", 1040, 50,36, col);
+    /*スマートフォン対応ギミック*/
+    if(tapC > 0){//タップ操作
+        if(900 < tapX && tapX < 1180 && 20 < tapY && tapY < 80){//[A]uto Missileの位置なら
+            tapC = 0;
+            automa = 1-automa;//自動発射機能
+        }
+        else{
+            ssX = ssX + int((tapX-ssX)/6);
+            ssY = ssY + int((tapY-ssY)/6);
+        }
+    }
     /*無敵状態*/
     if(muteki % 2 == 0) drawImgC(1,ssX,ssY);//自機の描画
     if(muteki > 0) muteki--;
