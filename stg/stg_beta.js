@@ -26,12 +26,14 @@ function setup() {
     loadImg(13, "image/title_ss.png");
     loadSound(0, "sound/bgm.m4a");
     initMissile();
+    initObject();
     initEffect();
 }
 /*メインループ*/
 var tmr = 0; //ゲーム内タイマー
 var idx = 0; //ゲームシーンを区別する為の変数
 var score = 0;
+var hiscore = 100000;
 var stage = 0;
 function mainloop() {
     tmr++;
@@ -46,7 +48,7 @@ function mainloop() {
             initObject();
             score = 0;
             stage = 1;
-            idx = 0;
+            idx = 1;
             tmr = 0;
             playBgm(0);
         }
@@ -80,6 +82,8 @@ function mainloop() {
         if(tmr > 30*5) idx = 0;//自動的にゲームタイトル移動
         break;
     }
+    fText("SCORE "+score, 200, 50, 40, "white");
+    fText("HISCORE "+hiscore, 600, 50, 40, "yellow");
 }
 
 /*背景のスクロール*/
@@ -93,7 +97,7 @@ function drawBG(spd) {//背景をスクロール位置を管理する
     var ofsx = bgX % 40;//縦のラインを移動させるオフセット値
     lineW(2);
     for(var i=1; i<=30; i++){//縦のライン
-        var tx = i * 40 - ofsx;//線の奥側のX座標
+        var tx = i * 40 - ofsx;//線の奥側のX座標 
         var bx = i * 240 - ofsx * 6 - 3000;//線の手前側のX座標
         line(tx,hy,bx,720,"silver");
     }
@@ -254,6 +258,8 @@ function moveObject() {
                             objLife[i]--;
                             if(objLife[i] == 0){
                                 objF[i] = false;
+                                score = score + 100;
+                                if(score > hiscore) hiscore = score;
                                 setEffect(objX[i], objY[i], 9);
                             }
                             else{
@@ -270,6 +276,13 @@ function moveObject() {
                     objF[i] = false;
                     energy--;
                     muteki = 30;
+                    //ゲームオーバー切り替え
+                    if(energy == 0){
+                        mslF[i] = false;
+                        idx = 2;
+                        tmr = 0;
+                        stopBgm();
+                    }
                 }
                 /*アイテムシステム*/
                 if(objType[i] == 2){//アイテム
@@ -348,7 +361,7 @@ function setWeapon() {
 }
 /*アイテムを出現させる関数*/
 function setItem() {
-    if(tmr % 90 == 0) setObject(2, 9, 1300, 60+rnd(600), -10, 0, 0); //Energy
-    if(tmr % 90 ==30) setObject(2, 10, 1300, 60+rnd(600), -10, 0, 0);//Missile
-    if(tmr % 90 ==60) setObject(2, 11, 1300, 60+rnd(600), -10, 0, 0);//Laser
+    if(tmr % 900 ==  0) setObject(2, 9, 1300, 60+rnd(600),  -10, 0, 0); //Energy
+    if(tmr % 900 ==300) setObject(2, 10, 1300, 60+rnd(600), -10, 0, 0);//Missile
+    if(tmr % 900 ==600) setObject(2, 11, 1300, 60+rnd(600), -10, 0, 0);//Laser
 }
