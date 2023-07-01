@@ -12,7 +12,7 @@
 //==2023/06/24 パワーアップアイテムを組み込む==//
 //==2023/06/26 スマートフォンに対応させる==//
 //==2023/06/26 シューティングゲームの完成==//
-
+//==2023/07/01 もっと面白くリッチなゲームする(BGM追加、ギミック追加)==//
 /*起動時の処理*/
 function setup() {
     canvasSize(1200,720);       //キャンバスサイズの設定
@@ -20,11 +20,12 @@ function setup() {
     loadImg(1, "image/spaceship.png");
     loadImg(2, "image/missile.png");
     loadImg(3, "image/explode.png");
-    for(var i=0; i<=4; i++) loadImg(4+i, "image/enemy"+i+".png");
-    for(var i=0; i<=2; i++) loadImg(9+i, "image/item"+i+".png");
-    loadImg(12, "image/laser.png");
-    loadImg(13, "image/title_ss.png");
-    loadSound(0, "sound/bgm.m4a");
+    for(var i=0; i<=5; i++) loadImg(4+i, "image/enemy"+i+".png");
+    for(var i=0; i<=3; i++) loadImg(9+i, "image/item"+i+".png");
+    loadImg(13, "image/laser.png");
+    loadImg(14, "image/title_ss.png");
+    var SND = ["Titlebgm", "GameOver"];
+    for(var i=0; i<SND.length; i++) loadSound(i, "sound/"+SND[i]+".m4a");
     initMissile();
     initObject();
     initEffect();
@@ -38,11 +39,14 @@ var stage = 0;
 function mainloop() {
     tmr++;
     drawBG(1);
+
     switch(idx){
         /*タイトル画面*/
         case 0:
-        drawImg(13,200,200);
-        if(tmr%40 < 20) fText("Press [SPC] or Click to start.", 600, 540, 40,"cyan"); //点滅動作
+        drawImg(14,200,200);
+        if(tmr%40 < 20){
+            fText("Press [SPC] or Click to start.", 600, 540, 40,"cyan"); //点滅動作
+        }
         if(key[32] > 0 || tapC > 0){//スペースキーまたはクリックしたら
             initSShip(); 
             initObject();
@@ -74,12 +78,16 @@ function mainloop() {
         break;
         /*ゲームオーバー*/
         case 2:
+        playBgm(1);
         if(tmr < 30*2 && tmr % 5 == 1) setEffect(ssX+rnd(120)-60, ssY+rnd(80)-40, 9); //ゲームオーバー時のエフェクト
         moveMissile();
         moveObject();
         drawEffect();
         fText("GAME OVER", 600, 300, 50, "red");
-        if(tmr > 30*5) idx = 0;//自動的にゲームタイトル移動
+        if(tmr > 130) {
+            idx = 0;//自動的にゲームタイトル移動
+            stopBgm();
+        }
         break;
     }
     fText("SCORE "+score, 200, 50, 40, "white");
@@ -182,7 +190,7 @@ function setMissile(x,y,xp,yp) {
     /*レーザーシステム*/
     if(laser > 0){//レーザーアイテム取得⇒100発撃てる
         laser--;//-1
-        mslImg[mslNum] = 12;
+        mslImg[mslNum] = 13;
     }
     mslNum = (mslNum+1)%MSL_MAX;
 }
@@ -290,6 +298,7 @@ function moveObject() {
                     if(objImg[i] == 9 && energy < 10) energy++;//エネルギー回復
                     if(objImg[i] == 10) weapon++; //弾の数増える
                     if(objImg[i] == 11) laser = laser + 100;//レーザー砲取得
+                    if(objImg[i] == 12) score = 10000;
                 }
             }
             if(objX[i]<-100 || objX[i]>1300 || objY[i]<-100 || objY[i]>820) objF[i] = false;
@@ -364,4 +373,5 @@ function setItem() {
     if(tmr % 900 ==  0) setObject(2, 9, 1300, 60+rnd(600),  -10, 0, 0); //Energy
     if(tmr % 900 ==300) setObject(2, 10, 1300, 60+rnd(600), -10, 0, 0);//Missile
     if(tmr % 900 ==600) setObject(2, 11, 1300, 60+rnd(600), -10, 0, 0);//Laser
+    if(tmr % 900 ==800) setObject(2, 12, 1300, 60+rnd(600), -50, 0, 0);//ポイント
 }
